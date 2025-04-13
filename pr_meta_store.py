@@ -5,10 +5,10 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-from utils import PR_META_RAW_IDX, PR_META_URL_IDX, get_os_client
+from utils import *
 
 region = "us-east-1"
-client = get_os_client()
+client = OS_CLIENT
 
 
 def check_index_exists(index_name):

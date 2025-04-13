@@ -12,7 +12,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-client = get_os_client()
+client = OS_CLIENT
 bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
 
 

@@ -8,7 +8,7 @@ from utils import *
 
 PR_META_URL_IDX = "pr_meta_url_index"
 
-client = get_os_client()
+client = OS_CLIENT
 
 
 def add_processed_flag(data):

@@ -2,7 +2,7 @@ from opensearchpy import OpenSearch
 import time
 from utils import *
 
-client = get_os_client()
+client = OS_CLIENT
 
 
 def create_vector_index(index_name):
