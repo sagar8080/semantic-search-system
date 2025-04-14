@@ -3,7 +3,7 @@ from opensearchpy.exceptions import NotFoundError, RequestError
 import boto3
 import logging
 from datetime import date
-from utils import *
+from utils.utils import *
 
 
 logging.basicConfig(
