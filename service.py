@@ -1,6 +1,4 @@
-import streamlit as st
 import json
-from opensearchpy import OpenSearch, RequestsHttpConnection
 from opensearchpy.exceptions import NotFoundError, RequestError
 import boto3
 import logging
@@ -27,7 +25,7 @@ def generate_embeddings(text, model_id=EMBEDDING_MODEL_ID):
         embedding = json.loads(response["body"].read().decode("utf-8"))
         return embedding[
             "embedding"
-        ]  # List of floats representing the embedding vector
+        ]
     except Exception as e:
         print(f"Error generating embeddings with Titan: {e}")
         return None
@@ -108,11 +106,10 @@ def search_documents(
                             "fields": [
                                 "pr_title^2",
                                 "pr_content^3",
-                            ],  # Boost title & summary
+                            ],
                             "type": "best_fields",
                         }
                     },
-                    # Boosted Fuzzy matches
                     {
                         "match": {
                             "pr_title": {
@@ -173,8 +170,7 @@ def search_documents(
         logging.info(f"Executing hybrid search for query: '{query}'")
         response = client.search(
             index=VECTOR_INDEX_NAME,
-            body=hybrid_query_body,
-            # No 'search_pipeline' param needed here IF it's set as default
+            body=hybrid_query_body
         )
         results = []
         if response and "hits" in response and "hits" in response["hits"]:
@@ -462,7 +458,6 @@ def pro_search(
                 }
             }
         }
-    # b. Define Semantic Sub-Query (k-NN)
     semantic_k = max(k * 5, 50)
     semantic_sub_query = {
         "knn": {"embedding": {"vector": query_embedding, "k": semantic_k}}
@@ -477,7 +472,6 @@ def pro_search(
                         "type": "best_fields",
                     }
                 },
-                # Boosted Fuzzy matches
                 {
                     "match": {
                         "pr_title": {
