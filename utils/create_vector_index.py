@@ -1,6 +1,6 @@
 from opensearchpy import OpenSearch
 import time
-from utils import *
+from .utils import OS_CLIENT
 
 client = OS_CLIENT
 

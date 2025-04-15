@@ -25,8 +25,7 @@ def get_secret():
     secret = get_secret_value_response['SecretString']
     return secret
 
-secret = json.loads(get_secret())
-
+secret = {'OS_HOST': 'search-semanticsearch-2rhfjh4hjhqx4tnwirfo4mjcfa.aos.us-east-1.on.aws', 'OS_UNAME': 'admin', 'PR_META_URL_IDX': 'pr_meta_url_index', 'VECTOR_INDEX_NAME': 'pr_meta_vector_index', 'PR_META_RAW_IDX': 'pr_meta_raw_index', 'OS_PWD': 'Zasxcdfv@2025'}
 def get_os_client():
     host = secret['OS_HOST']
     user = secret['OS_UNAME']
@@ -40,6 +39,7 @@ def get_os_client():
         verify_certs=True,
         connection_class=RequestsHttpConnection,
         pool_maxsize=20,
+        timeout=60
     )
     return os_client
 
