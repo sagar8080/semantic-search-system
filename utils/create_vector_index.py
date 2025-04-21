@@ -1,6 +1,4 @@
-from opensearchpy import OpenSearch
-import time
-from .utils import OS_CLIENT
+from opensearch import OS_CLIENT, PR_META_RAW_IDX, VECTOR_INDEX_NAME
 
 client = OS_CLIENT
 

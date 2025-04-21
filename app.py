@@ -1,79 +1,15 @@
 import streamlit as st
 from datetime import date
-from service import simple_search, advanced_search, pro_search
-import time 
+from utils.search_service import simple_search, advanced_search, pro_search
+from utils.utils import *
 
-def render_document(doc: dict, show_content: bool = True):
-    st.write(f"**Title:** {doc.get('pr_title', 'Untitled')}")
+APP_TITLE = "Proximity"
 
-    # CSS for bubble styling (ensure this is defined once, perhaps outside the function if called often)
-    bubble_css = """
-    <style>
-        .bubble-container { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
-        .entity-bubble { background: #e3f2fd; border-radius: 15px; padding: 6px 12px; font-size: 0.9em; color: #1976d2; }
-        .topic-bubble { background: #e8f5e9; border-radius: 15px; padding: 6px 12px; font-size: 0.9em; color: #2e7d32; }
-    </style>
-    """
-    st.markdown(bubble_css, unsafe_allow_html=True)
+st.set_page_config(layout="wide")
 
-    # Entities display
-    if entities := doc.get("entities"):
-        st.write("**Key Entities:**")
-        entities_html = '<div class="bubble-container">'
-        for entity in entities:
-            text = entity.get("text", "").replace("'", "&#39;")
-            entities_html += f'<div class="entity-bubble">{text}</div>'
-        entities_html += "</div>"
-        st.markdown(entities_html, unsafe_allow_html=True)
-
-    # Topics display
-    if topics := doc.get("topics"):
-        st.write("**Related Topics:**")
-        topics_html = '<div class="bubble-container">'
-        for topic in topics:
-            text = topic.get("text", "").replace("'", "&#39;")
-            topics_html += f'<div class="topic-bubble">{text}</div>'
-        topics_html += "</div>"
-        st.markdown(topics_html, unsafe_allow_html=True)
-
-    # Rest of the document rendering...
-    st.write(f"**URL:** {doc.get('pr_url', 'No URL available')}")
-    st.write(f"**Date:** {doc.get('pr_date', 'Unknown date')}")
-
-    if show_content:
-        st.write("**Content Preview:**")
-        preview_text = doc.get("pr_content", "Content not available")
-        st.text(preview_text[:1000] + "..." if len(preview_text) > 1000 else preview_text)
-
-
-# NOTE: Removing caching for perform_search as parameters change frequently
-# If search is slow and parameters stable, consider adding caching back carefully.
-# @st.cache_data # Consider caching if search is slow and inputs don't change constantly
-def perform_search(query, mode, k, fuzziness, start_date, end_date):
-    """Calls the appropriate search function based on the mode."""
-    start_date_str = str(start_date) if start_date else None
-    end_date_str = str(end_date) if end_date else None
-    results = []
-    print(f"Performing search: Mode={mode}, Query='{query}', K={k}, Fuzz={fuzziness}, Start={start_date_str}, End={end_date_str}") # Debug print
-    try:
-        if mode == "Simple":
-            results = simple_search(query, k, fuzziness, start_date_str, end_date_str)
-        elif mode == "⚡ Advanced":
-            results = advanced_search(query, k, fuzziness, start_date_str, end_date_str)
-        elif mode == "🚀 Pro":
-            results = pro_search(query, k, fuzziness, start_date_str, end_date_str)
-    except Exception as e:
-        st.error(f"An error occurred during search: {e}")
-        print(f"Search Error: {e}") # Debug print
-        results = [] # Ensure results is always a list
-    return results if results else [] # Ensure return is always a list
-
-
-# --- Streamlit App Layout ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ---- Header ----
 st.markdown(
     """
     <style>
@@ -104,7 +40,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---- Search Mode Selection (Main Area) ----
 search_mode = st.radio(
     'Available Search options',
     options=["Simple", "⚡ Advanced", "🚀 Pro"],
@@ -115,7 +50,6 @@ search_mode = st.radio(
 
 # ---- Sidebar ----
 with st.sidebar:
-    # Instructions
     with st.expander("Search Guide", expanded=True, icon="🔥"):
          st.markdown(
             """
@@ -162,7 +96,6 @@ with st.sidebar:
     # Content Preview Toggle
     content_preview = st.checkbox("Show content preview in results", False, key='content_preview_toggle')
 
-# ---- Chat Interface ----
 chat_display_container = st.container()
 with chat_display_container:
     for message in st.session_state.messages:
@@ -208,12 +141,8 @@ if chat_query := st.chat_input("Search Press releases from Rep. Larson ..."):
                 end_date=end_date
             )
 
-            # --- Process and Store Results ---
             results_count = len(search_results)
             intro_text = f"Found {results_count} relevant document(s) using {search_mode} mode for '{chat_query}':" if results_count > 0 else f"No matching documents found using {search_mode} mode for '{chat_query}'."
-
-            # Store the results (or lack thereof) in the session state
-            # We store the raw data, not the rendered components
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": {
@@ -224,13 +153,8 @@ if chat_query := st.chat_input("Search Press releases from Rep. Larson ..."):
                     "mode": search_mode   # Store context
                 }
             })
-
-    # Rerun the app immediately after adding the assistant message.
-    # The loop at the beginning will then render the new message, including results.
     st.rerun()
 
-
-# ---- Footer Implementation ----
 st.markdown(
     """
 <style>

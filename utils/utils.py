@@ -1,53 +1,56 @@
-import os
-import json
-import boto3
-from botocore.exceptions import ClientError
-from opensearchpy import OpenSearch, RequestsHttpConnection, helpers
+import streamlit as st
+from datetime import date
+from .search_service import simple_search, advanced_search, pro_search
+import time
 
-REGION = "us-east-1"
+def render_document(doc: dict, show_content: bool = True):
+    st.write(f"**Title:** {doc.get('pr_title', 'Untitled')}")
+    bubble_css = """
+    <style>
+        .bubble-container { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        .entity-bubble { background: #e3f2fd; border-radius: 15px; padding: 6px 12px; font-size: 0.9em; color: #1976d2; }
+        .topic-bubble { background: #e8f5e9; border-radius: 15px; padding: 6px 12px; font-size: 0.9em; color: #2e7d32; }
+    </style>
+    """
+    st.markdown(bubble_css, unsafe_allow_html=True)
+    if entities := doc.get("entities"):
+        st.write("**Key Entities:**")
+        entities_html = '<div class="bubble-container">'
+        for entity in entities:
+            text = entity.get("text", "").replace("'", "&#39;")
+            entities_html += f'<div class="entity-bubble">{text}</div>'
+        entities_html += "</div>"
+        st.markdown(entities_html, unsafe_allow_html=True)
+    if topics := doc.get("topics"):
+        st.write("**Related Topics:**")
+        topics_html = '<div class="bubble-container">'
+        for topic in topics:
+            text = topic.get("text", "").replace("'", "&#39;")
+            topics_html += f'<div class="topic-bubble">{text}</div>'
+        topics_html += "</div>"
+        st.markdown(topics_html, unsafe_allow_html=True)
+    st.write(f"**URL:** {doc.get('pr_url', 'No URL available')}")
+    st.write(f"**Date:** {doc.get('pr_date', 'Unknown date')}")
 
-def get_secret():
+    if show_content:
+        st.write("**Content Preview:**")
+        preview_text = doc.get("pr_content", "Content not available")
+        st.text(preview_text[:1000] + "..." if len(preview_text) > 1000 else preview_text)
 
-    secret_name = "os_creds"
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=REGION
-    )
-
+def perform_search(query, mode, k, fuzziness, start_date, end_date):
+    start_date_str = str(start_date) if start_date else None
+    end_date_str = str(end_date) if end_date else None
+    results = []
+    print(f"Performing search: Mode={mode}, Query='{query}', K={k}, Fuzz={fuzziness}, Start={start_date_str}, End={end_date_str}") # Debug print
     try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-    except ClientError as e:
-        raise e
-
-    secret = get_secret_value_response['SecretString']
-    return secret
-
-secret = {'OS_HOST': 'search-semanticsearch-2rhfjh4hjhqx4tnwirfo4mjcfa.aos.us-east-1.on.aws', 'OS_UNAME': 'admin', 'PR_META_URL_IDX': 'pr_meta_url_index', 'VECTOR_INDEX_NAME': 'pr_meta_vector_index', 'PR_META_RAW_IDX': 'pr_meta_raw_index', 'OS_PWD': 'Zasxcdfv@2025'}
-def get_os_client():
-    host = secret['OS_HOST']
-    user = secret['OS_UNAME']
-    pwd = secret['OS_PWD']
-    auth = (user, pwd)
-    os_client = OpenSearch(
-        hosts=[{"host": host, "port": 443}],
-        http_auth=auth,
-        region=REGION,
-        use_ssl=True,
-        verify_certs=True,
-        connection_class=RequestsHttpConnection,
-        pool_maxsize=20,
-        timeout=60
-    )
-    return os_client
-
-PR_META_URL_IDX = secret['PR_META_URL_IDX']
-VECTOR_INDEX_NAME = secret['VECTOR_INDEX_NAME']
-PR_META_RAW_IDX = secret['PR_META_RAW_IDX']
-BASE_MODEL_ID = "cohere.command-r-v1:0"
-EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"
-PIPELINE_NAME = "hybrid_norm_pipeline"
-OS_CLIENT = get_os_client()
-    
+        if mode == "Simple":
+            results = simple_search(query, k, fuzziness, start_date_str, end_date_str)
+        elif mode == "⚡ Advanced":
+            results = advanced_search(query, k, fuzziness, start_date_str, end_date_str)
+        elif mode == "🚀 Pro":
+            results = pro_search(query, k, fuzziness, start_date_str, end_date_str)
+    except Exception as e:
+        st.error(f"An error occurred during search: {e}")
+        print(f"Search Error: {e}")
+        results = []
+    return results if results else []

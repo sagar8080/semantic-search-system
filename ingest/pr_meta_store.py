@@ -1,11 +1,11 @@
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth, helpers
+from opensearchpy import helpers
 import boto3
 from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import re
 import time
-from utils import *
+from utils.opensearch import OS_CLIENT, PR_META_RAW_IDX, PR_META_URL_IDX
 
 region = "us-east-1"
 client = OS_CLIENT

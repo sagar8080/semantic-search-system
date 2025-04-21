@@ -4,7 +4,7 @@ from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
 import boto3
 from datetime import datetime
 import time
-from utils import *
+from utils.opensearch import OS_CLIENT, PR_META_URL_IDX
 
 PR_META_URL_IDX = "pr_meta_url_index"
 
