@@ -114,7 +114,7 @@ def generate_embeddings(text):
 
 def store_in_vector_index(document):
     try:
-        response = client.index(index=VECTOR_INDEX_NAME, body=document)
+        response = client.index(index=PR_META_VECTOR_IDX, body=document)
         print(f"Document indexed successfully! ID: {response['_id']}")
         return response
     except Exception as e:

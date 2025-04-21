@@ -7,7 +7,7 @@ logging.basicConfig(
 )
 credentials = get_secret()
 PR_META_URL_IDX = credentials.get("PR_META_URL_IDX")
-VECTOR_INDEX_NAME = credentials.get('PR_META_VECTOR_IDX')
+PR_META_VECTOR_IDX = credentials.get('PR_META_VECTOR_IDX')
 PR_META_RAW_IDX = credentials.get('PR_META_RAW_IDX')
 BASE_MODEL_ID = "cohere.command-r-v1:0"
 EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"

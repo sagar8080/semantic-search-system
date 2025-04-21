@@ -36,7 +36,6 @@ def load_json_from_path(file_path, expected_format="dict"):
         if expected_format == "dict" and not isinstance(data, dict):
             st.error(f"Error: File '{file_path}' should contain a single dictionary.")
             return None
-        print(f"Successfully loaded and parsed {file_path}")
         return data
     except json.JSONDecodeError as e:
         st.error(f"Error: Invalid JSON in file '{file_path}' near line {e.lineno}, col {e.colno}: {e.msg}")
@@ -84,7 +83,6 @@ def create_direct_topic_to_doc_details_mapping_cached(_topic_mapping_data, _topi
     for topic, details_set in topic_to_docs_map.items():
          final_map[topic] = [{"doc_id": d[0], "url": d[1], "title": d[2]} for d in sorted(list(details_set))]
 
-    print("Direct topic-to-document details mapping created.")
     return final_map
 
 def get_dataframe(topic_data):
@@ -263,23 +261,9 @@ full_data_loaded = taxonomy_data_loaded and st.session_state.get(TOPICS_JSON_STA
 
 # --- Sidebar ---
 with st.sidebar:
-    st.header("Data Status")
-    if taxonomy_data_loaded:
-        st.success(f"Topic Map loaded: '{TOPIC_MAPPING_FILE_PATH}'")
-    else:
-        st.error(f"Topic Map failed to load from '{TOPIC_MAPPING_FILE_PATH}'. CRUD disabled.")
-
-    if st.session_state.get(TOPICS_JSON_STATE_KEY) is not None:
-        st.success(f"Topics Data loaded: '{TOPICS_FILE_PATH}'")
-    else:
-        st.warning(f"Topics Data failed to load from '{TOPICS_FILE_PATH}'. Document Finder/Graph may be limited.")
-
-    # Reload Button
-    if st.button("🔄 Force Reload Data Files", key="reload_btn"):
-        # Clear cached loading functions
+    if st.button("🔄 Reload", key="reload_btn"):
         load_json_from_path.clear()
         create_direct_topic_to_doc_details_mapping_cached.clear()
-        # Clear state variables related to loaded data
         st.session_state.pop(TOPIC_MAPPING_STATE_KEY, None)
         st.session_state.pop(TOPICS_JSON_STATE_KEY, None)
         st.session_state.pop(MISMATCH_KEY, None)
@@ -404,11 +388,11 @@ tab1, tab2, tab3 = st.tabs(["Knowledge Graph Viewer", "Document Finder", "Taxono
 # --- Tab 1: Knowledge Graph Viewer ---
 with tab1:
     st.header("Knowledge Graph Viewer")
-    st.info("Visualize connections between selected topics (and potentially related phrases/documents if Neo4j backend is connected). Select topics in the sidebar.")
+    st.info("Visualize connections between selected topics | Select topics in the sidebar.")
 
     driver = get_neo4j_driver() # Attempt to get driver (placeholder)
     if driver is None:
-        st.warning("Neo4j connection not configured. Displaying basic topic graph based on selected filters.")
+        st.warning("Graph DB connection not configured. Displaying basic topic graph based on selected filters.")
 
     if not taxonomy_data_loaded:
         st.error("❌ Topic Map data not loaded. Cannot display graph.")
@@ -418,9 +402,7 @@ with tab1:
             st.info("👈 Select one or more topics from the sidebar 'Filters' section to visualize.")
         else:
             st.write(f"Displaying graph for topics: {', '.join(selected_topics_multi)}")
-            # Fetch data (using placeholder or real Neo4j call)
             subgraph_data = fetch_subgraph_data(driver, selected_topics_multi)
-            # Generate and display graph HTML
             graph_html = generate_pyvis_html_from_neo4j_data(subgraph_data)
             components.html(graph_html, height=750, scrolling=False)
 
@@ -433,7 +415,7 @@ with tab2:
     driver = get_neo4j_driver()
 
     if not full_data_loaded:
-         st.warning("⚠️ Required data (Topic Map and/or Topics Data) not fully loaded. Document lookup might be incomplete or unavailable.")
+         st.warning("⚠️ Required data is not fully loaded. Document lookup might be incomplete or unavailable.")
          if not taxonomy_data_loaded: st.stop() # Stop if no topics are even loaded
 
     selected_topic_single = st.session_state.get("doc_filter_topic", "")
@@ -446,7 +428,7 @@ with tab2:
             topic_doc_map = st.session_state[TOPIC_DOC_MAP_KEY]
             documents = topic_doc_map.get(normalize_key(selected_topic_single), [])
             if documents:
-                 st.write(f"Found {len(documents)} documents (from loaded JSONs):")
+                 st.write(f"Found {len(documents)} documents:")
                  df_docs = pd.DataFrame(documents)
                  st.dataframe(df_docs, use_container_width=True, hide_index=True,
                      column_config={"doc_id": "ID", "title": "Title", "url": st.column_config.LinkColumn("URL", display_text="Visit 🔗")},
@@ -454,12 +436,12 @@ with tab2:
             else:
                  st.info(f"No documents found for '{selected_topic_single}' based on the loaded JSON files.")
         elif not full_data_loaded:
-             st.warning("Document lookup requires both JSON files to be loaded correctly for the pre-calculated map.")
+             st.warning("Document lookup requires pre-loaded data: Please try again!")
 
 
 with tab3:
-    st.header("Taxonomy Reviewer Tool (CRUD Operations)")
-    st.info("Review, edit, and manage the topic-phrase relationships. Changes are reflected in the session and can be downloaded.")
+    st.header("Taxonomy Reviewer Tool")
+    st.info("Review, edit, and manage the topic-phrase relationships. Changes are reflected in the session and can be saved.")
 
     if not taxonomy_data_loaded:
         st.error("❌ Topic Map data ('topic_mapping.json') not loaded. Cannot display reviewer tool.")

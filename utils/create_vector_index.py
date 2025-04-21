@@ -1,4 +1,4 @@
-from opensearch import OS_CLIENT, PR_META_RAW_IDX, VECTOR_INDEX_NAME
+from opensearch import OS_CLIENT, PR_META_RAW_IDX, PR_META_VECTOR_IDX
 
 client = OS_CLIENT
 
@@ -72,8 +72,8 @@ if client.indices.exists(PR_META_RAW_IDX):
 else:
     create_meta_index(PR_META_RAW_IDX)
 
-if client.indices.exists(VECTOR_INDEX_NAME):
+if client.indices.exists(PR_META_VECTOR_IDX):
     # client.indices.delete(VECTOR_INDEX_NAME)
     print("Vector index exists")
 else:
-    create_vector_index(VECTOR_INDEX_NAME)
+    create_vector_index(PR_META_VECTOR_IDX)

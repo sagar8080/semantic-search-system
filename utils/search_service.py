@@ -168,7 +168,7 @@ def search_documents(
         }
         logging.info(f"Executing hybrid search for query: '{query}'")
         response = client.search(
-            index=VECTOR_INDEX_NAME,
+            index=PR_META_VECTOR_IDX,
             body=hybrid_query_body
         )
         results = []
@@ -217,7 +217,7 @@ def build_date_filter(start_date=None, end_date=None):
 def execute_search(query_body):
     """Execute search against OpenSearch index and process results"""
     try:
-        response = client.search(index=VECTOR_INDEX_NAME, body=query_body)
+        response = client.search(index=PR_META_VECTOR_IDX, body=query_body)
 
         results = []
         if response and "hits" in response and "hits" in response["hits"]:
@@ -250,7 +250,7 @@ def simple_search(
     fuzziness: int = 2,
     start_date: str = None,
     end_date: str = None,
-):
+    ):
     """Focus on topics/entities with lexical+fuzzy search"""
     query_body = {
         "query": {
@@ -326,7 +326,7 @@ def advanced_search(
     fuzziness: int = 2,
     start_date: str = None,
     end_date: str = None,
-):
+    ):
     query_embedding = generate_embeddings(query)
     if not query_embedding:
         logging.error(

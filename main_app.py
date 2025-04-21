@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import date
-from utils.search_service import simple_search, advanced_search, pro_search
 from utils.utils import *
 
 APP_TITLE = "Proximity"
@@ -24,9 +23,9 @@ st.markdown(
         }
         .stRadio [role=radiogroup]{
             padding: 15px;
-            align-items: left; 
-            justify-content: left; 
-            text-align: left; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
             margin-left: auto; 
             margin-right: auto; 
             font-size: 1em;
@@ -41,9 +40,9 @@ st.markdown(
 )
 
 search_mode = st.radio(
-    'Available Search options',
+    label = "---",
     options=["Simple", "⚡ Advanced", "🚀 Pro"],
-    horizontal=False, # Changed back to False as horizontal with captions can be wide
+    horizontal=True, # Changed back to False as horizontal with captions can be wide,
     captions=['Topic/Entity focus', 'Title/Summary focus', 'Full Content focus (Hybrid)'],
     key='search_mode_radio' # Added a key
 )
@@ -121,22 +120,17 @@ with chat_display_container:
 
 # React to user input
 if chat_query := st.chat_input("Search Press releases from Rep. Larson ..."):
-    # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": chat_query})
-
-    # Display user message immediately
     with st.chat_message("user"):
         st.markdown(chat_query)
-
-    # Prepare and display "thinking" message for the assistant
     with st.chat_message("assistant"):
         with st.spinner(f"Searching with {search_mode} mode..."):
             # Perform the search using the *current* state of UI elements
             search_results = perform_search(
                 query=chat_query,
                 mode=search_mode,
-                k=k_value, # Use the value determined in the sidebar logic
-                fuzziness=fuzziness_value, # Use the value determined in the sidebar logic
+                k=k_value,
+                fuzziness=fuzziness_value,
                 start_date=start_date,
                 end_date=end_date
             )
@@ -148,9 +142,9 @@ if chat_query := st.chat_input("Search Press releases from Rep. Larson ..."):
                 "content": {
                     "type": "search_results",
                     "intro_text": intro_text,
-                    "data": search_results, # Store the list of document dicts
-                    "query": chat_query, # Store context
-                    "mode": search_mode   # Store context
+                    "data": search_results,
+                    "query": chat_query,
+                    "mode": search_mode
                 }
             })
     st.rerun()
@@ -170,7 +164,7 @@ st.markdown(
     }
 </style>
 <div class="footer">
-    <p>© 2025 Proximity | Team Larson - UMD MIM Capstone Program</p>
+    <p>© 2025 Team Larson - UMD MIM Capstone Program</p>
 </div>
 """,
     unsafe_allow_html=True,
