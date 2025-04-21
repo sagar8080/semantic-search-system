@@ -96,19 +96,13 @@ def fetch_subgraph_data(_driver, selected_topics):
             return {"nodes": nodes, "edges": edges}
     except Exception as e: st.error(f"Failed to fetch subgraph data: {e}"); logging.error(f"Error fetching subgraph: {e}", exc_info=True); return {"nodes": [], "edges": []}
 
-# --- Visualization Function ---
-
 @st.cache_data(show_spinner="Generating graph visualization...")
 def generate_pyvis_html_from_neo4j_data(subgraph_data):
     """Generates interactive HTML from fetched Neo4j subgraph data using Pyvis, with transparent background and clickable nodes."""
     nodes = subgraph_data.get("nodes", [])
     edges = subgraph_data.get("edges", [])
-
     if not nodes: return "<p>No data available to visualize.</p>"
-
     net = Network(height='700px', width='100%', directed=False, notebook=True, bgcolor="#1b1f22",)
-
-    # Add nodes - PASS THE 'url' ATTRIBUTE FOR DOCUMENT NODES
     for node_data in nodes:
         pyvis_node_attrs = {
             "label": node_data.get("label", node_data["id"]),
@@ -116,22 +110,25 @@ def generate_pyvis_html_from_neo4j_data(subgraph_data):
             "color": node_data.get("color", "#97C2FC"),
             "size": node_data.get("size", 50),
             "shape": 'dot',
-            # Pass type and url directly as node attributes
             "type": node_data.get("type"),
             "url": node_data.get("url")
         }
-        # Filter out None values before passing to PyVis
         pyvis_node_attrs_cleaned = {k: v for k, v in pyvis_node_attrs.items() if v is not None}
         net.add_node(node_data["id"], **pyvis_node_attrs_cleaned)
-
-    # Add edges
     for edge_data in edges:
         net.add_edge(edge_data["from"], edge_data["to"], title=edge_data.get("title", ""))
 
     # Configure physics
     net.options.physics.enabled = True
     net.options.physics.solver = 'forceAtlas2Based'
-    net.options.physics.forceAtlas2Based = {"gravitationalConstant": -100, "centralGravity": 0.01, "springLength": 110, "springConstant": 0.06, "damping": 0.5, "avoidOverlap": 0.2}
+    net.options.physics.forceAtlas2Based = {
+        "gravitationalConstant": -100, 
+        "centralGravity": 0.01, 
+        "springLength": 110, 
+        "springConstant": 0.06, 
+        "damping": 0.5, 
+        "avoidOverlap": 0.2
+        }
     net.options.physics.minVelocity = 0.5
     net.options.interaction.hover = True
     net.options.interaction.tooltipDelay = 100
