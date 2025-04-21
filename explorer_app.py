@@ -30,15 +30,12 @@ def load_json_from_path(file_path, expected_format="dict"):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             file_content_str = f.read()
-            # Basic cleaning attempt for trailing commas
             content = re.sub(r',\s*(\]|\})', r'\1', file_content_str)
             data = json.loads(content)
 
         if expected_format == "dict" and not isinstance(data, dict):
             st.error(f"Error: File '{file_path}' should contain a single dictionary.")
             return None
-        # Add more format checks if needed
-
         print(f"Successfully loaded and parsed {file_path}")
         return data
     except json.JSONDecodeError as e:
@@ -60,7 +57,6 @@ def create_direct_topic_to_doc_details_mapping_cached(_topic_mapping_data, _topi
     topic_to_docs_map = defaultdict(set)
 
     if not _topic_mapping_data or not _topics_data:
-        # Removed warning here, handled by data_loaded check later
         return {}
 
     topic_mapping_data = copy.deepcopy(_topic_mapping_data)
@@ -103,7 +99,7 @@ def get_dataframe(topic_data):
                 is_mismatched = (topic, phrase) in mismatched_set
                 rows.append({"Topic": topic, "Phrase": phrase, "Mismatch": is_mismatched})
         else:
-            pass # Reduce warnings during normal use
+            pass
 
     df = pd.DataFrame(rows) if rows else pd.DataFrame(columns=['Topic', 'Phrase', 'Mismatch'])
     return df.sort_values(by=['Topic', 'Phrase']).reset_index(drop=True)
@@ -174,7 +170,6 @@ def add_phrase_state(topic, new_phrase):
             current_data[topic].sort()
             st.session_state[TOPIC_MAPPING_STATE_KEY] = current_data
             st.success(f"Phrase '{phrase_to_add}' added to '{topic}'.")
-            # No rerun needed here, editor will update
         else: st.warning(f"Phrase '{phrase_to_add}' already in '{topic}'.")
     elif not topic: st.error("Select topic.")
     elif not new_phrase: st.error("Enter phrase.")
@@ -199,12 +194,12 @@ def move_phrase_state(phrase_to_move, source_topic, target_topic):
         current_data[target_topic_clean].sort()
 
     mismatches = st.session_state.get(MISMATCH_KEY, set())
-    mismatches.discard((source_topic, phrase_to_move)) # Remove if it was mismatched
+    mismatches.discard((source_topic, phrase_to_move))
     st.session_state[MISMATCH_KEY] = mismatches
 
     st.session_state[TOPIC_MAPPING_STATE_KEY] = current_data
     st.success(f"Moved '{phrase_to_move}' from '{source_topic}' to '{target_topic_clean}'.")
-    if new_topic_created: st.rerun() # Rerun if new topic created
+    if new_topic_created: st.rerun()
 
 def delete_phrase_state(topic, phrase_to_delete):
     if TOPIC_MAPPING_STATE_KEY not in st.session_state or st.session_state[TOPIC_MAPPING_STATE_KEY] is None: return
@@ -239,8 +234,8 @@ def download_data(topic_data, filename="topics/updated_topic_mapping_data.json")
         return False
 
 # --- Streamlit UI ---
-st.set_page_config(layout="wide", page_title="Taxonomy Review & Explore")
-st.title("📝 Taxonomy Review & Exploration Tool")
+st.set_page_config(layout="wide", page_title="Proximity Exploration Tool")
+st.title("📝 Proximity Exploration Tool")
 
 # --- Data Loading & Initialization ---
 # Load data only once per session unless explicitly reloaded
@@ -262,10 +257,7 @@ if TOPIC_DOC_MAP_KEY not in st.session_state or st.session_state[TOPIC_DOC_MAP_K
         st.session_state[TOPIC_DOC_MAP_KEY] = {}
 
 
-# Check if data needed for core functionality is loaded
-# Taxonomy reviewer only needs topic_mapping.json
 taxonomy_data_loaded = st.session_state.get(TOPIC_MAPPING_STATE_KEY) is not None
-# Graph and Doc finder ideally need both, but can function partially or show placeholders
 full_data_loaded = taxonomy_data_loaded and st.session_state.get(TOPICS_JSON_STATE_KEY) is not None
 
 
@@ -438,7 +430,7 @@ with tab2:
     st.header("Document Finder")
     st.info("Find documents associated with a specific topic based on the loaded data. Select a topic in the sidebar.")
 
-    driver = get_neo4j_driver() # Placeholder driver needed if fetching from Neo4j
+    driver = get_neo4j_driver()
 
     if not full_data_loaded:
          st.warning("⚠️ Required data (Topic Map and/or Topics Data) not fully loaded. Document lookup might be incomplete or unavailable.")
@@ -450,11 +442,9 @@ with tab2:
         st.info("👈 Select a topic from the sidebar 'Filters' section.")
     else:
         st.subheader(f"Documents Related to Topic: '{selected_topic_single}'")
-
-        # Option 1: Use pre-calculated map (if full_data_loaded)
         if full_data_loaded and TOPIC_DOC_MAP_KEY in st.session_state:
             topic_doc_map = st.session_state[TOPIC_DOC_MAP_KEY]
-            documents = topic_doc_map.get(normalize_key(selected_topic_single), []) # Use normalized key for lookup
+            documents = topic_doc_map.get(normalize_key(selected_topic_single), [])
             if documents:
                  st.write(f"Found {len(documents)} documents (from loaded JSONs):")
                  df_docs = pd.DataFrame(documents)
@@ -463,30 +453,22 @@ with tab2:
                      key="doc_finder_table_json")
             else:
                  st.info(f"No documents found for '{selected_topic_single}' based on the loaded JSON files.")
-
-        # Fallback if only partial data or no specific source is preferred
         elif not full_data_loaded:
              st.warning("Document lookup requires both JSON files to be loaded correctly for the pre-calculated map.")
 
 
-# --- Tab 3: Taxonomy Reviewer Tool ---
 with tab3:
     st.header("Taxonomy Reviewer Tool (CRUD Operations)")
     st.info("Review, edit, and manage the topic-phrase relationships. Changes are reflected in the session and can be downloaded.")
 
     if not taxonomy_data_loaded:
         st.error("❌ Topic Map data ('topic_mapping.json') not loaded. Cannot display reviewer tool.")
-        st.stop() # Stop execution for this tab if core data is missing
-
-    # Get current data from state
+        st.stop() 
     topic_mapping_data = st.session_state[TOPIC_MAPPING_STATE_KEY]
     all_topics_list = sorted(topic_mapping_data.keys())
 
-    # --- Filtering and Display ---
     topic_search_term = st.text_input("Search Topics:", placeholder="Type to filter topics...", key="topic_search")
     topic_search_term_lower = topic_search_term.lower() if topic_search_term else ""
-
-    # Filter topics based on search
     filtered_topic_list = [
         topic for topic in all_topics_list
         if topic_search_term_lower in topic.lower()
@@ -539,10 +521,9 @@ with tab3:
                         edited_df[['Topic', 'Phrase', 'Mismatch']],
                         original_subset_df,
                         on=['Topic', 'Phrase'],
-                        how='left', # Keep all edited rows
+                        how='left',
                         suffixes=('_edited', '_original')
                     )
-                    # Fill NaN for Mismatch_original if a row was conceptually added (shouldn't happen with disabled cols)
                     comparison_df['Mismatch_original'] = comparison_df['Mismatch_original'].fillna(False)
                     comparison_df['Mismatch_edited'] = comparison_df['Mismatch_edited'].fillna(False) # Ensure bool
                     changed_rows = comparison_df[comparison_df['Mismatch_edited'] != comparison_df['Mismatch_original']]
@@ -569,4 +550,4 @@ with tab3:
 
                 except Exception as e:
                     st.error(f"Error displaying or processing the data editor: {e}")
-                    st.dataframe(filtered_df_display) # Fallback to simple dataframe display
+                    st.dataframe(filtered_df_display)
