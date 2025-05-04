@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import date
-from .search_service import simple_search, advanced_search, pro_search
+from .search_service import simple_search, advanced_search, pro_search, pro_search_enhanced
 import time
 
 def render_document(doc: dict, show_content: bool = True):
@@ -31,6 +31,7 @@ def render_document(doc: dict, show_content: bool = True):
         st.markdown(topics_html, unsafe_allow_html=True)
     st.write(f"**URL:** {doc.get('pr_url', 'No URL available')}")
     st.write(f"**Date:** {doc.get('pr_date', 'Unknown date')}")
+    st.write(f"**Summary:** {doc.get('summary', '----')}")
 
     if show_content:
         st.write("**Content Preview:**")
@@ -48,7 +49,7 @@ def perform_search(query, mode, k, fuzziness, start_date, end_date):
         elif mode == "⚡ Advanced":
             results = advanced_search(query, k, fuzziness, start_date_str, end_date_str)
         elif mode == "🚀 Pro":
-            results = pro_search(query, k, fuzziness, start_date_str, end_date_str)
+            results = pro_search_enhanced(query, k, fuzziness, start_date_str, end_date_str)
     except Exception as e:
         st.error(f"An error occurred during search: {e}")
         print(f"Search Error: {e}")

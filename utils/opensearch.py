@@ -1,31 +1,16 @@
+import os
 from opensearchpy import OpenSearch, RequestsHttpConnection, helpers, NotFoundError
 from .get_secrets import get_secret
+from .constants import *
 import logging
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-credentials = get_secret()
-PR_META_URL_IDX = credentials.get("PR_META_URL_IDX")
-PR_META_VECTOR_IDX = credentials.get('PR_META_VECTOR_IDX')
-PR_META_RAW_IDX = credentials.get('PR_META_RAW_IDX')
-BASE_MODEL_ID = "cohere.command-r-v1:0"
-EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"
-PIPELINE_NAME = "hybrid_norm_pipeline"
-REGION = "us-east-1"
-PIPELINE_DEFINITION = {
-    "description": "Pipeline for normalizing and combining lexical/semantic scores",
-    "phase_results_processors": [
-        {
-            "normalization-processor": {
-                "normalization": {"technique": "min_max"},
-                "combination": {"technique": "arithmetic_mean"},
-            }
-        }
-    ],
-}
 
-def get_os_client():
+def get_os_client(credentials=None):
+    if not credentials:
+        credentials = get_secret()
     host = credentials.get('OS_HOST')
     user = credentials.get("OS_UNAME")
     pwd = credentials.get("OS_PWD")
@@ -41,8 +26,6 @@ def get_os_client():
         timeout=60
     )
     return os_client
-
-OS_CLIENT = get_os_client()
 
 
 def create_search_pipeline(os_client, pipeline_name, pipeline_body):

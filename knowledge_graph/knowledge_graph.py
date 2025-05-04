@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from utils.get_secrets import get_secrets
+from utils.constants import *
 from collections import defaultdict
 from neo4j import GraphDatabase, unit_of_work
 import logging
@@ -9,25 +9,32 @@ import time
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-secrets = get_secrets()
-NEO4J_URI = secrets.get("NEO4J_URI")
-NEO4J_USERNAME = secrets.get("NEO4J_USERNAME")
-NEO4J_PASSWORD = secrets.get("NEO4J_PASSWORD")
+
+NEO4J_URI = credentials.get("NEO4J_URI")
+NEO4J_USERNAME = credentials.get("NEO4J_USERNAME")
+NEO4J_PASSWORD = credentials.get("NEO4J_PASSWORD")
 
 if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
     logging.error("Neo4j credentials (URI, USERNAME, PASSWORD) not found in .env file. Exiting.")
     exit(1)
 
-def load_json_safe(filepath):
-    """Loads a JSON file safely, handling potential errors and basic cleaning."""
-    if not os.path.exists(filepath):
-        logging.error(f"File not found at {filepath}")
-        raise FileNotFoundError(f"Error: File not found at {filepath}")
+
+def read_topics_json(filename):
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        current_script_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_script_dir)
+        relative_path_to_target = os.path.join('topics', filename) 
+        full_path_to_topics_json = os.path.join(parent_dir, relative_path_to_target)
+        with open(full_path_to_topics_json, 'r', encoding='utf-8') as f:
             content = f.read()
-            content = re.sub(r',\s*(\]|\})', r'\1', content) # Basic cleaning
-            data = json.loads(content)
+            data = json.load(content)
+        return data
+    except Exception as e:
+        return None
+
+def load_json_safe(filepath):
+    try:
+        data = read_topics_json(filepath)
         if not isinstance(data, dict):
             logging.error(f"Invalid JSON structure in {filepath}. Expected a dictionary.")
             raise ValueError(f"Error: Invalid JSON structure in {filepath}.")
@@ -40,6 +47,7 @@ def load_json_safe(filepath):
         logging.error(f"An unexpected error occurred while loading {filepath}: {e}")
         raise RuntimeError(f"Unexpected error loading {filepath}") from e
 
+
 def normalize_key(key_string):
     """Normalizes keys by stripping whitespace and lowercasing."""
     if not isinstance(key_string, str):
@@ -47,7 +55,7 @@ def normalize_key(key_string):
     return key_string.strip().lower()
 
 # Updated cleanup function using batching
-@unit_of_work(timeout=300) # Set a timeout for potentially long operations
+@unit_of_work(timeout=600)
 def cleanup_neo4j_database(tx, batch_size=10000):
     """
     Deletes all nodes and relationships in the database in batches.
@@ -56,8 +64,6 @@ def cleanup_neo4j_database(tx, batch_size=10000):
     logging.info(f"Starting database cleanup (deleting nodes and relationships) in batches of {batch_size}...")
     total_deleted = 0
     while True:
-        # This query finds nodes, detaches and deletes them in batches within a single transaction context provided by execute_write
-        # Using LIMIT within the subquery passed to CALL ensures we process batches.
         result = tx.run("""
             MATCH (n)
             CALL {
@@ -82,6 +88,20 @@ def cleanup_neo4j_database(tx, batch_size=10000):
             logging.info("Cleanup finished: No more nodes found to delete.")
             break 
         time.sleep(0.1)
+        
+        logging.info("Step 2: Dropping all constraints...")
+    
+    constraints_dropped_count = 0
+    constraints_result = tx.run("SHOW CONSTRAINTS YIELD name")
+    constraint_names = [record["name"] for record in constraints_result]
+    for name in constraint_names:
+        try:
+            tx.run("DROP CONSTRAINT $name IF EXISTS", name=name)
+            logging.info(f"Dropped constraint: {name}")
+            constraints_dropped_count += 1
+        except Exception as e:
+            logging.error(f"Failed to drop constraint {name}: {e}")
+    logging.info(f"Finished dropping {constraints_dropped_count} constraints.")
 
     logging.info(f"Database cleanup complete. Total nodes deleted: {total_deleted}")
     return total_deleted

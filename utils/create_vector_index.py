@@ -1,6 +1,7 @@
-from opensearch import OS_CLIENT, PR_META_RAW_IDX, PR_META_VECTOR_IDX
+from .constants import PR_META_RAW_IDX, PR_META_VECTOR_IDX
+from utils.opensearch import get_os_client
 
-client = OS_CLIENT
+client = get_os_client()
 
 
 def create_vector_index(index_name):

@@ -11,7 +11,6 @@ import os
 import re
 from knowledge_graph.utils import *
 
-# --- Constants ---
 TOPIC_MAPPING_STATE_KEY = "topic_phrase_data"
 TOPICS_JSON_STATE_KEY = "topics_json_data"
 MISMATCH_KEY = "mismatched_feedback"
@@ -20,7 +19,7 @@ TOPIC_DOC_MAP_KEY = "topic_doc_map"
 TOPIC_MAPPING_FILE_PATH = 'topics/topic_mapping.json'
 TOPICS_FILE_PATH = 'topics/topics.json'
 
-# --- Utility Functions ---
+
 @st.cache_data(show_spinner="Loading JSON from path...")
 def load_json_from_path(file_path, expected_format="dict"):
     """Loads data from a JSON file path with validation."""
@@ -382,10 +381,8 @@ with st.sidebar:
         st.info("Load Topic Map data to enable filters.")
 
 
-# --- Main UI Tabs ---
 tab1, tab2, tab3 = st.tabs(["Knowledge Graph Viewer", "Document Finder", "Taxonomy Reviewer Tool"])
 
-# --- Tab 1: Knowledge Graph Viewer ---
 with tab1:
     st.header("Knowledge Graph Viewer")
     st.info("Visualize connections between selected topics | Select topics in the sidebar.")
