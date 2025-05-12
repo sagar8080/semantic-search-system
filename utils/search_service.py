@@ -295,3 +295,96 @@ def pro_search_enhanced(
     else:
         final_results = normalize_scores_to_100(initial_results[:k])
     return final_results
+
+def search_kb(
+    query: str,
+    k: int = 5,
+    fuzziness: int = 2,
+    start_date: str = None,
+    end_date: str = None,
+    use_llm_expansion: bool = True,
+    use_reranker: bool = True,
+    rerank_window_factor: int = 5
+):
+    if not query:
+        logging.warning("Search query is empty.")
+        return []
+
+    search_terms = [query]
+
+    if use_llm_expansion:
+        # Assuming expand_query_with_llm returns a list of strings
+        llm_expanded_terms = expand_query_with_llm(query) 
+        if llm_expanded_terms: # Check if expansion returned any terms
+            search_terms.extend(llm_expanded_terms)
+        search_terms = list(set(search_terms)) # Deduplicate
+
+    logging.info(f"Using search terms after expansion: {search_terms}")
+    
+    original_query_embedding = generate_embeddings(query)
+    if not original_query_embedding:
+        logging.error("Failed to generate query embedding. Cannot perform hybrid search.")
+        return []
+
+    initial_retrieve_k = rerank_window_factor if use_reranker else k
+    semantic_k = min(max(1, initial_retrieve_k), 10) 
+
+    semantic_sub_query = {
+        "knn": {"embedding": {"vector": original_query_embedding, "k": semantic_k}}
+    }
+    
+    lexical_should_clauses = []
+    for i, term in enumerate(search_terms):
+        boost_factor = 1.0 if term.lower() == query.lower() else 0.5 
+        lexical_should_clauses.extend([
+            {"match": {"pr_title": {"query": term, "fuzziness": fuzziness, "boost": 2.0 * boost_factor}}},
+            {"match": {"pr_content": {"query": term, "fuzziness": fuzziness, "boost": 1.5 * boost_factor}}},
+            {"match": {"pr_summary": {"query": term, "fuzziness": fuzziness, "boost": 2.0 * boost_factor}}},
+        ])
+
+    lexical_sub_query = {
+        "bool": {
+            "should": lexical_should_clauses,
+            "filter": build_date_filter(start_date, end_date) if build_date_filter(start_date, end_date) else [], 
+            "minimum_should_match": 1,
+        }
+    }
+
+    hybrid_query_body = {
+        "query": {"hybrid": {"queries": [lexical_sub_query, semantic_sub_query]}},
+        "size": initial_retrieve_k,
+        "_source": True,
+    }
+
+    logging.info(f"Executing initial retrieval for query: '{query}'")
+    pre_filtered_results = execute_search(hybrid_query_body)
+
+    if not pre_filtered_results:
+        logging.info("No initial results from OpenSearch.")
+        return []
+    final_results_meeting_threshold = None
+    if use_reranker:
+        logging.info(f"Passing {len(pre_filtered_results)} documents to reranker.")
+        # Assume rerank_with_bedrock takes the list and returns top_n results with a 'relevance_score' (0-1)
+        reranked_results = rerank_with_bedrock(query, pre_filtered_results, top_n=k) 
+        final_results_meeting_threshold = [
+            doc for doc in reranked_results if doc.get('bedrock_relevance_score', 0.0) >= 0.60
+        ]
+        if not final_results_meeting_threshold:
+             logging.info("No documents met the 60 percent reranking score threshold after initial OS filter.")
+
+    else: # Not using reranker
+        # Assume normalize_scores_to_100 processes the list and adds a 'normalized_score' (0-100)
+        normalized_results = normalize_scores_to_100(pre_filtered_results) 
+
+        confidently_normalized_results = [
+            doc for doc in normalized_results if doc.get('score', 0.0) >= 0.70
+        ]
+
+        if not confidently_normalized_results:
+            logging.info("No documents met the 70% normalized score threshold after initial OS filter.")
+        else:
+            # Sort by normalized_score and take top k from those meeting the threshold
+            confidently_normalized_results.sort(key=lambda x: x.get('normalized_score_100', 0.0), reverse=True)
+            final_results_meeting_threshold = confidently_normalized_results[:k]            
+    return final_results_meeting_threshold
