@@ -1,0 +1,191 @@
+/* public/material_dark_style.css */
+
+/* --- Import Roboto Font (if not available system-wide) --- */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+/* --- Global Styles --- */
+body {
+  font-family: var(--font-family, 'Roboto', sans-serif); /* Ensure Roboto is used */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased; /* Smoother fonts */
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Material Elevation & Surfaces --- */
+/* Material Design uses shadows to indicate elevation.
+   Chainlit's "card" variable is a good target for message bubbles and other surfaces.
+   We'll add more distinct shadows.
+*/
+
+/* --- Header (id="header") --- */
+/* Chainlit's header is usually quite minimal. Let's give it a subtle elevation. */
+#header {
+  background-color: var(--paper, #1E1E1E) !important; /* Use paper color for elevation */
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12) !important; /* Material elevation dp4 */
+  border-bottom: none !important; /* Remove default border if shadow is enough */
+  padding: 0.8rem 1.5rem !important;
+}
+#header h1, #header h3, #header span { /* Header text */
+    color: var(--foreground, #FFFFFF) !important;
+    font-weight: 500 !important;
+}
+#header button { /* Readme, settings, theme toggle */
+  color: var(--secondary-foreground, rgba(255, 255, 255, 0.7)) !important;
+  border: 1px solid transparent !important; /* Make border transparent, rely on hover */
+  border-radius: 4px !important; /* Standard Material button radius */
+}
+#header button:hover {
+  background-color: rgba(var(--primary-rgb, 187, 134, 252), 0.08) !important; /* Primary color with low opacity for hover */
+  color: var(--primary, #BB86FC) !important;
+}
+
+
+/* --- Message Bubbles --- */
+/* Targeting the actual content container within the message step */
+div[data-type="MessageContent"] {
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important; /* Material uses less dramatic rounding sometimes */
+  max-width: 78% !important;
+  word-wrap: break-word !important;
+  line-height: 1.5 !important;
+  margin-bottom: 0.75rem !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.24) !important; /* Material elevation dp1-dp2 */
+  transition: box-shadow 0.3s cubic-bezier(.25,.8,.25,1) !important;
+}
+div[data-type="MessageContent"]:hover {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.25), 0 3px 6px rgba(0,0,0,0.22) !important; /* Slightly more elevation on hover */
+}
+
+/* Assistant Messages */
+div[data-step-type="assistant_message"] div[data-type="MessageContent"] {
+  background-color: var(--card, #1E1E1E) !important;
+  color: var(--foreground, #FFFFFF) !important; /* Use high-emphasis text for readability */
+  margin-right: auto !important;
+  margin-left: 0.25rem !important; /* Consistent small margin */
+}
+
+/* User Messages */
+div[data-step-type="user_message"] div[data-type="MessageContent"] {
+  background-color: var(--primary, #BB86FC) !important;
+  color: var(--primary-foreground, #000000) !important;
+  margin-left: auto !important;
+  margin-right: 0.25rem !important;
+}
+
+/* Avatar Styling - subtle Material touch */
+div[data-step-type="assistant_message"] img, div[data-step-type="user_message"] img {
+    border-radius: 50% !important; /* Ensure fully round avatars */
+    border: none !important; /* Remove previous border */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3) !important; /* Subtle shadow for avatar */
+    width: 32px !important; /* Consistent size */
+    height: 32px !important;
+}
+
+
+/* --- Message Composer (Input Area) --- */
+/* Composer container */
+form > div.relative.flex {
+  background-color: var(--background, #121212) !important; /* Match main background */
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+  padding: 0.75rem 1rem !important;
+  box-shadow: 0 -1px 3px rgba(0,0,0,0.1) !important; /* Subtle shadow above composer */
+}
+
+/* Text input field - Material outlined/filled style */
+div[contenteditable="true"][role="textbox"] {
+  background-color: var(--input, #2C2C2E) !important;
+  color: var(--foreground, #FFFFFF) !important;
+  padding: 0.9rem 1rem !important; /* Standard Material input padding */
+  border-radius: 4px !important; /* Material standard border-radius */
+  min-height: 3rem !important;
+  border: 1px solid transparent !important; /* Transparent border initially */
+  border-bottom: 1px solid var(--muted-foreground, rgba(255, 255, 255, 0.5)) !important; /* Underline for unfocused */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+div[contenteditable="true"][role="textbox"]:focus {
+  background-color: var(--input, #313133) !important; /* Slightly different bg on focus */
+  border: 1px solid var(--primary, #BB86FC) !important; /* Full border on focus */
+  border-bottom-width: 2px !important; /* Thicker underline on focus */
+  box-shadow: none !important; /* Remove other shadows */
+}
+div[contenteditable="true"][role="textbox"][data-placeholder]:empty:before {
+  color: var(--muted-foreground, rgba(255, 255, 255, 0.5)) !important;
+  font-style: italic;
+}
+
+/* Send Button - Material Icon Button style */
+form > div.relative.flex > button[type="submit"] {
+  background-color: transparent !important;
+  color: var(--primary, #BB86FC) !important; /* Icon color from primary */
+  border-radius: 50% !important; /* Circular for icon buttons */
+  padding: 0.6rem !important; /* Adjust padding to make it look good with an icon */
+  width: 40px; /* Fixed size for circular button */
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease !important;
+}
+form > div.relative.flex > button[type="submit"]:hover:not(:disabled) {
+  background-color: rgba(var(--primary-rgb, 187, 134, 252), 0.12) !important; /* Ripple effect on hover */
+}
+form > div.relative.flex > button[type="submit"]:disabled {
+  color: var(--muted-foreground, rgba(255, 255, 255, 0.5)) !important;
+  background-color: transparent !important;
+  cursor: not-allowed !important;
+}
+form > div.relative.flex > button[type="submit"] svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor; /* Icon inherits button color */
+}
+
+
+/* --- Action Buttons within messages (e.g., "Generate Story KG") --- */
+/* Material Contained Button style */
+div[data-type="MessageContent"] button {
+  background-color: var(--secondary, #03DAC6) !important;
+  color: var(--secondary-foreground, #000000) !important;
+  border: none !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 4px !important;
+  text-transform: uppercase; /* Material buttons often uppercase */
+  font-weight: 500 !important;
+  letter-spacing: 0.05em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24) !important;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+div[data-type="MessageContent"] button:hover {
+  background-color: #018786 !important; /* Darker shade of secondary for hover */
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23) !important;
+}
+
+/* --- Scrollbar Styling (WebKit browsers) --- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background, #121212);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground, rgba(255, 255, 255, 0.5));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--secondary-foreground, rgba(255, 255, 255, 0.7));
+}
+
+/* --- PyVis Graph Container (if you render it inline) --- */
+/* You might need to target the specific div Chainlit creates for your HTML element */
+div[data-testid="element-knowledge_graph_viz"] > div { /* Assuming your element name is knowledge_graph_viz */
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background-color: var(--paper, #1E1E1E);
+  padding: 0.5rem; /* Add some padding around the graph */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+div[data-testid="element-knowledge_graph_viz"] iframe { /* If pyvis is rendered in an iframe inside the element */
+    border-radius: 6px; /* Match inner content to outer container */
+}
